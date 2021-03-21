@@ -1,0 +1,79 @@
+version: "3"
+services:
+
+  db:
+    restart: always
+    image: ${MYSQL_IMAGE}
+    container_name: bylog_db
+    volumes:
+      - ./db/mysql:/var/lib/mysql
+      - ./db/my.cnf:/etc/my.cnf:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_NAME}
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
+  redis:
+    restart: always
+    image: ${REDIS_IMAGE}
+    container_name: blog_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  web:
+    restart: always
+    image: ${BLOG_IMAGE}
+    container_name: blog_web
+    environment:
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_HOST: db
+      MYSQL_NAME: ${MYSQL_NAME}
+      MYSQL_USER: root
+      MYSQL_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    env_file:
+      - ./blog.env
+    command: gunicorn blog.wsgi -w 2 -b 0.0.0.0:8000
+    volumes:
+      - ./web/static:/opt/cloud/blog/static
+      - ./web/media:/opt/cloud/blog/media
+      - ./web/whoosh_index:/opt/cloud/blog/whoosh_index
+    links:
+      - db
+      - redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+      - frontend
+
+  nginx:
+    restart: always
+    image: ${NGINX_IMAGE}
+    container_name: izone_nginx
+    volumes:
+      - ./web/static:/opt/blog/static:ro
+      - ./web/media:/opt/blog/media:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl_cert:/etc/nginx/ssl_cert:ro
+      - ./nginx/log:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - web
+    networks:
+      - frontend
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
