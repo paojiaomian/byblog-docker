@@ -41,9 +41,11 @@ services:
       - ./blog.env
     command: gunicorn blog.wsgi -w 2 -b 0.0.0.0:8000
     volumes:
-      - ./web/static:/opt/cloud/blog/static
-      - ./web/media:/opt/cloud/blog/media
-      - ./web/whoosh_index:/opt/cloud/blog/whoosh_index
+      - ./webProject/static:/opt/cloud/webProject/static
+      - ./webProject/media:/opt/cloud/webProject/media
+      - ./webProject/whoosh_index:/opt/cloud/webProject/whoosh_index
+      - ./webProject/blog:/opt/cloud/webProject/blog
+      - ./webProject/appsProject:/opt/cloud/webProject/appsProject
     links:
       - db
       - redis
